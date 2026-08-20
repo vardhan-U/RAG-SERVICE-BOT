@@ -85,12 +85,11 @@ def main():
     for doc in documents:
         all_chunks.extend(build_chunks_for_document(doc))
 
-    Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
+   
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         for chunk in all_chunks:
             f.write(chunk.model_dump_json() + "\n")
 
-    print(f"{len(documents)} documents -> {len(all_chunks)} chunks")
-    print(f"written to {OUTPUT_PATH}")
+   
 
 main()
