@@ -14,8 +14,9 @@ np.random.seed(1234)             # make reproducible
 xb = emb1.astype('float32')
 xb = np.array(xb).astype('float32')
 
-
-index = faiss.IndexFlatL2(d)   
+# faiss.normalize_L2(nb)
+# faiss.normalize_L2(nq)
+index = faiss.IndexFlatIP(d)   
 index.add(xb)                  
 
 
@@ -27,23 +28,29 @@ def search_query(query_embedding,k=4):
     
     return D[0], I[0]
 
+def embed_query(query_question):
+   
+    local_model_path = r'C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\src\ingestion\local_model'
 
-query = "what is an environment variable"
-local_model_path = r'C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\src\ingestion\local_model'
+    model = load_model(local_model_path)
 
-model = load_model(local_model_path)
+    embedding = model.encode(query_question,show_progress_bar=True,normalize_embeddings=True)
+    return embedding
 
-embedding = model.encode(query,show_progress_bar=True,normalize_embeddings=True)
+def query_related_chunk_ids(embedding):
+    distances, indices = search_query(embedding.reshape(1, -1))
+    return indices
 
-print(search_query(embedding.reshape(1,-1)))
-chunk_ids = np.load(r"C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\src\ingestion\chunkids.npy")
+def print_related_chunks(indices):
+    chunk_ids = np.load(r"C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\src\ingestion\chunkids.npy")
+    with open(r"C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\data\processed\chunks.jsonl","r",encoding="utf-8") as f:
+        all_chunks = [json.loads(line) for line in f]
+        for idx in indices:
+            target_id = chunk_ids[idx]
+            match = next(c for c in all_chunks if c["chunk_id"] == target_id)
+            print(match["content"])
+            print("\n\n\n\n")
 
-distances, indices = search_query(embedding.reshape(1, -1))
-
-
-with open(r"C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\data\processed\chunks.jsonl","r",encoding="utf-8") as f:
-    all_chunks = [json.loads(line) for line in f]
-    for idx in indices:
-        target_id = chunk_ids[idx]
-        match = next(c for c in all_chunks if c["chunk_id"] == target_id)
-        print(match["heading"], "->", match["content"])
+a=embed_query("""How can I allow only GET and POST requests from a specific frontend while allowing credentials?""")
+b=query_related_chunk_ids(a)
+print_related_chunks(b)
