@@ -63,10 +63,20 @@ def related_chunks(indices):
 def generate_responese(chunks,query):
     client = OpenAI(base_url="http://localhost:11434/v1",api_key="OLLAMA")
     chunks_text = "\n\n".join(chunks)
-    messages = [{"role":"system","content":"Now you are an assistant who is going to help the user address his issue \
-                 .You are provided the user query followed by the related info.Send output only the response for the query ,donot explain"
-                 "the thought process .The output should only be the delivarable response.Keep the thinking latency minimal and if the "
-                 "context isnot nough or irrelevanty return I don't know."},{
+    
+    system_inst = (
+    "You are an expert FastAPI backend developer. Your job is to answer user queries using high-level, "
+    "idiomatic framework features found in the context chunks. "
+    "CRITICAL RULES:\n"
+    "1. Never write low-level or manual bytes-parsing logic unless explicitly requested.\n"
+    "2. Use native FastAPI classes (like Form, Body, Depends, Path, Query) to handle requests.\n"
+    "3. Keep code blocks strictly valid, idiomatic Python.\n"
+    "4. If the context chunks do not contain a clear framework solution, state 'I don't know'."
+)
+
+
+
+    messages = [{"role":"system","content":system_inst},{
                      "role":"user",
                      "content":f"Now this is the query:{query} and these are chunks:{chunks_text}"
                  }]
