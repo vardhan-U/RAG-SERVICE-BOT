@@ -47,19 +47,17 @@ def query_related_chunk_ids(embedding):
 def related_chunks(indices):
     chunk_ids = np.load(r"C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\src\ingestion\chunkids.npy")
     relAted_chunks_list =[] 
+    chunk_heading=[]
     with open(r"C:\Users\HI\Desktop\MY-PROJECTS\RAG-SERVICE-BOT\data\processed\chunks.jsonl","r",encoding="utf-8") as f:
         all_chunks = [json.loads(line) for line in f]
         for idx in indices:
             target_id = chunk_ids[idx]
             match = next(c for c in all_chunks if c["chunk_id"] == target_id)
             relAted_chunks_list.append(match["content"])
-            # print(match["content"])
-            # print("\n\n\n\n")
+            chunk_heading.append(match["heading"])
     print("Chunks gathered")
-    return relAted_chunks_list
-# a=embed_query("""How can I allow only GET and POST requests from a specific frontend while allowing credentials?""")
-# b=query_related_chunk_ids(a)
-# print_related_chunks(b)
+    return relAted_chunks_list, chunk_heading
+
 
 
 def generate_responese(chunks,query):
@@ -67,17 +65,22 @@ def generate_responese(chunks,query):
     chunks_text = "\n\n".join(chunks)
     messages = [{"role":"system","content":"Now you are an assistant who is going to help the user address his issue \
                  .You are provided the user query followed by the related info.Send output only the response for the query ,donot explain"
-                 "the thought process .The output should only be the delivarable response.Keep the thinking latency minimal"},{
+                 "the thought process .The output should only be the delivarable response.Keep the thinking latency minimal and if the "
+                 "context isnot nough or irrelevanty return I don't know."},{
                      "role":"user",
                      "content":f"Now this is the query:{query} and these are chunks:{chunks_text}"
                  }]
-    response = client.chat.completions.create(model="phi3:instruct",messages=messages)
-    print(response.choices[0].message.content)
+    # response = client.chat.completions.create(model="phi3:instruct",messages=messages)
+    # print(response.choices[0].message.content)  
+    # return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(model="phi3:instruct", messages=messages)
+        answer = response.choices[0].message.content
+        print(answer)
+        return answer
+    except Exception as e:
+        print("LLM CALL FAILED:", repr(e))
+        return None
 
 
-query = "How to split endpoints into multiple files using APIRouter in FastAPI"
 
-a = embed_query(query)
-b = query_related_chunk_ids(a)
-c = related_chunks(b)
-generate_responese(chunks=c,query=query)
